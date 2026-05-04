@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShiftLens — Restaurant Shift Performance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0e0c; --surface: #1a1916; --card: #211f1c; --border: #2e2b27;
+    --accent: #e8a84c; --accent2: #c96b3a; --text: #f0ede8; --muted: #6e6a63;
+    --green: #6db87a; --red: #d96b6b; --blue: #6a9fd8;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding: 0; }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+  .logo-area h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: var(--text); }
+  .logo-area h1 span { color: var(--accent); }
+  .logo-area p { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .shift-selector { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
+  .shift-btn { padding: 6px 14px; border: none; background: transparent; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.5px; cursor: pointer; border-radius: 5px; transition: all 0.2s; text-transform: uppercase; }
+  .shift-btn.active { background: var(--accent); color: var(--bg); font-weight: 500; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; animation: fadeUp 0.4s ease both; }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .kpi-card:nth-child(1) { animation-delay: 0.05s; } .kpi-card:nth-child(2) { animation-delay: 0.1s; } .kpi-card:nth-child(3) { animation-delay: 0.15s; } .kpi-card:nth-child(4) { animation-delay: 0.2s; }
+  .kpi-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; }
+  .kpi-value { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+  .kpi-delta { font-family: 'DM Mono', monospace; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+  .delta-up { color: var(--green); } .delta-down { color: var(--red); }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; animation: fadeUp 0.4s ease both; }
+  .chart-card:nth-child(1) { animation-delay: 0.25s; } .chart-card:nth-child(2) { animation-delay: 0.3s; }
+  .chart-title { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 20px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 100%); cursor: pointer; }
+  .bar:hover { filter: brightness(1.2); }
+  .bar-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); text-align: center; white-space: nowrap; }
+  .bar-val { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--accent); text-align: center; }
+  .donut-wrap { display: flex; align-items: center; gap: 28px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-pct { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-left: auto; }
+  .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; animation: fadeUp 0.5s ease 0.35s both; }
+  .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .live-badge { display: flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; text-align: left; padding: 0 0 12px 0; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid #1f1d1a; transition: background 0.15s; }
+  tbody tr:hover { background: rgba(232,168,76,0.04); }
+  tbody td { padding: 12px 0; font-size: 13px; color: var(--text); }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .status-seated { background: rgba(109,184,122,0.15); color: var(--green); }
+  .status-waiting { background: rgba(232,168,76,0.15); color: var(--accent); }
+  .status-done { background: rgba(110,106,99,0.2); color: var(--muted); }
+  .footer-strip { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border); }
+  .footer-strip p { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .footer-strip span { color: var(--accent); }
+  @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } .charts-grid { grid-template-columns: 1fr; } header { flex-direction: column; gap: 16px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-area">
+      <h1>Shift<span>Lens</span></h1>
+      <p>Restaurant Shift Performance Dashboard</p>
+    </div>
+    <div class="shift-selector">
+      <button class="shift-btn active" onclick="setShift(this,'lunch')">Lunch</button>
+      <button class="shift-btn" onclick="setShift(this,'dinner')">Dinner</button>
+      <button class="shift-btn" onclick="setShift(this,'weekend')">Weekend</button>
+    </div>
+  </header>
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Avg Table Turnover — By Hour</div>
+      <div class="bar-chart" id="barChart"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Guest Volume — By Section</div>
+      <div class="donut-wrap">
+        <svg width="120" height="120" viewBox="0 0 120 120" id="donutSvg"></svg>
+        <div class="donut-legend" id="donutLegend"></div>
+      </div>
+    </div>
+  </div>
+  <div class="table-card">
+    <div class="table-header">
+      <div class="chart-title" style="margin:0">Active Tables — Current Shift Snapshot</div>
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+    </div>
+    <table>
+      <thead><tr><th>Table #</th><th>Section</th><th>Guests</th><th>Seated At</th><th>Time Elapsed</th><th>Status</th><th>Server</th></tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div class="footer-strip">
+    <p>Built by <span>Lucas Silva</span> — Portfolio Project, 2025</p>
+    <p>Data source: <span>modeled shift data · restaurant operations</span></p>
+  </div>
+</div>
+<script>
+const data = {
+  lunch: {
+    kpis: [
+      { label: 'Avg Turnover Time', value: '38 min', delta: '−4 min', up: true },
+      { label: 'Guests Served', value: '147', delta: '+12 vs avg', up: true },
+      { label: 'Tables Turned', value: '61', delta: '+8 vs avg', up: true },
+      { label: 'Peak Hour', value: '12–1pm', delta: 'Tues highest', up: null },
+    ],
+    bars: [{ label: '11am', val: 6 },{ label: '12pm', val: 18 },{ label: '1pm', val: 14 },{ label: '2pm', val: 9 },{ label: '3pm', val: 5 },{ label: '4pm', val: 3 }],
+    donut: [{ label: 'Bar Section', pct: 28, color: '#e8a84c' },{ label: 'Patio', pct: 22, color: '#c96b3a' },{ label: 'Main Floor', pct: 35, color: '#6a9fd8' },{ label: 'Private', pct: 15, color: '#6db87a' }],
+    rows: [
+      { table: '04', section: 'Main Floor', guests: 4, time: '12:14pm', elapsed: '28 min', status: 'seated', server: 'Maria G.' },
+      { table: '07', section: 'Bar', guests: 2, time: '12:31pm', elapsed: '11 min', status: 'seated', server: 'Jordan K.' },
+      { table: '11', section: 'Patio', guests: 6, time: '11:55am', elapsed: '47 min', status: 'done', server: 'Carlos M.' },
+      { table: '14', section: 'Main Floor', guests: 3, time: '1:02pm', elapsed: 'Queue', status: 'waiting', server: '—' },
+      { table: '02', section: 'Private', guests: 8, time: '12:00pm', elapsed: '42 min', status: 'seated', server: 'Maria G.' },
+    ]
+  },
+  dinner: {
+    kpis: [
+      { label: 'Avg Turnover Time', value: '54 min', delta: '+6 min vs lunch', up: false },
+      { label: 'Guests Served', value: '213', delta: '+45 vs lunch', up: true },
+      { label: 'Tables Turned', value: '78', delta: '+17 vs lunch', up: true },
+      { label: 'Peak Hour', value: '7–8pm', delta: 'Fri highest', up: null },
+    ],
+    bars: [{ label: '5pm', val: 8 },{ label: '6pm', val: 17 },{ label: '7pm', val: 22 },{ label: '8pm', val: 16 },{ label: '9pm', val: 10 },{ label: '10pm', val: 5 }],
+    donut: [{ label: 'Bar Section', pct: 20, color: '#e8a84c' },{ label: 'Patio', pct: 30, color: '#c96b3a' },{ label: 'Main Floor', pct: 38, color: '#6a9fd8' },{ label: 'Private', pct: 12, color: '#6db87a' }],
+    rows: [
+      { table: '01', section: 'Main Floor', guests: 5, time: '7:10pm', elapsed: '22 min', status: 'seated', server: 'Jordan K.' },
+      { table: '09', section: 'Patio', guests: 4, time: '6:48pm', elapsed: '44 min', status: 'seated', server: 'Carlos M.' },
+      { table: '16', section: 'Bar', guests: 2, time: '8:01pm', elapsed: '7 min', status: 'seated', server: 'Maria G.' },
+      { table: '03', section: 'Private', guests: 10, time: '7:00pm', elapsed: '32 min', status: 'seated', server: 'Jordan K.' },
+      { table: '12', section: 'Main Floor', guests: 3, time: '8:15pm', elapsed: 'Queue', status: 'waiting', server: '—' },
+    ]
+  },
+  weekend: {
+    kpis: [
+      { label: 'Avg Turnover Time', value: '47 min', delta: '+9 min vs weekday', up: false },
+      { label: 'Guests Served', value: '298', delta: 'Highest volume', up: true },
+      { label: 'Tables Turned', value: '102', delta: '+24 vs Fri avg', up: true },
+      { label: 'Peak Hour', value: '6–7pm', delta: 'Sat highest', up: null },
+    ],
+    bars: [{ label: '11am', val: 12 },{ label: '1pm', val: 21 },{ label: '3pm', val: 14 },{ label: '5pm', val: 18 },{ label: '6pm', val: 24 },{ label: '8pm', val: 13 }],
+    donut: [{ label: 'Bar Section', pct: 25, color: '#e8a84c' },{ label: 'Patio', pct: 33, color: '#c96b3a' },{ label: 'Main Floor', pct: 30, color: '#6a9fd8' },{ label: 'Private', pct: 12, color: '#6db87a' }],
+    rows: [
+      { table: '05', section: 'Patio', guests: 6, time: '6:05pm', elapsed: '18 min', status: 'seated', server: 'Carlos M.' },
+      { table: '08', section: 'Main Floor', guests: 4, time: '5:50pm', elapsed: '33 min', status: 'seated', server: 'Maria G.' },
+      { table: '15', section: 'Bar', guests: 3, time: '7:12pm', elapsed: '6 min', status: 'seated', server: 'Jordan K.' },
+      { table: '10', section: 'Patio', guests: 2, time: '7:20pm', elapsed: 'Queue', status: 'waiting', server: '—' },
+      { table: '06', section: 'Private', guests: 12, time: '6:00pm', elapsed: '58 min', status: 'done', server: 'Maria G.' },
+    ]
+  }
+};
+function setShift(btn, shift) {
+  document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render(shift);
+}
+function render(shift) {
+  const d = data[shift];
+  document.getElementById('kpiGrid').innerHTML = d.kpis.map((k,i) => `
+    <div class="kpi-card" style="animation-delay:${0.05+i*0.05}s">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-delta ${k.up===true?'delta-up':k.up===false?'delta-down':''}">
+        ${k.up===true?'▲':k.up===false?'▼':'—'} ${k.delta}
+      </div>
+    </div>`).join('');
+  const max = Math.max(...d.bars.map(b=>b.val));
+  document.getElementById('barChart').innerHTML = d.bars.map(b=>`
+    <div class="bar-group">
+      <div class="bar-val">${b.val}</div>
+      <div class="bar" style="height:${Math.round((b.val/max)*110)}px"></div>
+      <div class="bar-label">${b.label}</div>
+    </div>`).join('');
+  const cx=60,cy=60,r=44,ir=28;
+  let angle=-Math.PI/2, paths='';
+  d.donut.forEach(seg=>{
+    const sweep=(seg.pct/100)*2*Math.PI;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep),y2=cy+r*Math.sin(angle+sweep);
+    const ix1=cx+ir*Math.cos(angle),iy1=cy+ir*Math.sin(angle);
+    const ix2=cx+ir*Math.cos(angle+sweep),iy2=cy+ir*Math.sin(angle+sweep);
+    const large=sweep>Math.PI?1:0;
+    paths+=`<path d="M${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} L${ix2},${iy2} A${ir},${ir} 0 ${large},0 ${ix1},${iy1} Z" fill="${seg.color}" opacity="0.9"/>`;
+    angle+=sweep;
+  });
+  document.getElementById('donutSvg').innerHTML=paths+`<circle cx="60" cy="60" r="20" fill="#211f1c"/>`;
+  document.getElementById('donutLegend').innerHTML=d.donut.map(s=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${s.color}"></div>
+      <span>${s.label}</span>
+      <span class="legend-pct">${s.pct}%</span>
+    </div>`).join('');
+  const statusMap={seated:'status-seated',waiting:'status-waiting',done:'status-done'};
+  document.getElementById('tableBody').innerHTML=d.rows.map(r=>`
+    <tr>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent)">${r.table}</td>
+      <td>${r.section}</td><td>${r.guests}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${r.time}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${r.elapsed}</td>
+      <td><span class="status-badge ${statusMap[r.status]}">${r.status}</span></td>
+      <td style="color:var(--muted);font-size:12px">${r.server}</td>
+    </tr>`).join('');
+}
+render('lunch');
+</script>
+</body>
+</html>

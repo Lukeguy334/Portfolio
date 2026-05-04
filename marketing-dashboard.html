@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Analytics Dashboard — Lucas Silva</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: #f8f7f4; color: #1a1916; min-height: 100vh; }
+.dash { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid #e2e0db; padding-bottom: 20px; }
+.topbar h1 { font-size: 20px; font-weight: 500; color: #1a1916; }
+.topbar p { font-size: 13px; color: #6e6a63; margin-top: 2px; }
+.tab-row { display: flex; gap: 4px; background: #eeecea; border-radius: 8px; padding: 3px; }
+.tab { padding: 5px 16px; border: none; background: transparent; font-size: 13px; color: #6e6a63; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.tab.active { background: #fff; color: #1a1916; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+.metric { background: #eeecea; border-radius: 8px; padding: 16px; }
+.metric-label { font-size: 11px; color: #6e6a63; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'DM Mono', monospace; }
+.metric-value { font-size: 24px; font-weight: 500; color: #1a1916; line-height: 1; }
+.metric-delta { font-size: 11px; margin-top: 5px; font-family: 'DM Mono', monospace; }
+.up { color: #1d7a4a; } .down { color: #b53e3e; }
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.chart-card { background: #fff; border: 0.5px solid #dddbd5; border-radius: 12px; padding: 20px; }
+.chart-label { font-size: 12px; color: #6e6a63; margin-bottom: 14px; font-weight: 500; }
+.full-card { background: #fff; border: 0.5px solid #dddbd5; border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+.legend-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 12px; color: #6e6a63; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.insight-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.insight-card { background: #fff; border: 0.5px solid #dddbd5; border-radius: 12px; padding: 16px; }
+.insight-tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 6px; margin-bottom: 8px; font-weight: 500; font-family: 'DM Mono', monospace; }
+.tag-info { background: #dbeafe; color: #1e4fa3; }
+.tag-success { background: #d1fae5; color: #065f46; }
+.tag-warn { background: #fef3c7; color: #92400e; }
+.insight-card p { font-size: 13px; color: #3a3835; line-height: 1.5; }
+.funnel-wrap { display: flex; flex-direction: column; gap: 8px; }
+.funnel-row { display: flex; align-items: center; gap: 10px; }
+.funnel-label { font-size: 12px; color: #6e6a63; width: 90px; flex-shrink: 0; text-align: right; font-family: 'DM Mono', monospace; }
+.funnel-bar-wrap { flex: 1; height: 30px; background: #eeecea; border-radius: 4px; overflow: hidden; }
+.funnel-bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: 11px; font-weight: 500; color: #fff; transition: width 0.6s cubic-bezier(0.34,1.2,0.64,1); }
+.funnel-pct { font-size: 11px; color: #6e6a63; width: 38px; text-align: right; flex-shrink: 0; font-family: 'DM Mono', monospace; }
+footer { text-align: center; padding: 24px 0 8px; font-size: 12px; color: #aaa9a3; font-family: 'DM Mono', monospace; }
+footer span { color: #3266ad; }
+@media (max-width: 700px) { .charts-row, .insight-row { grid-template-columns: 1fr; } .topbar { flex-direction: column; align-items: flex-start; } }
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="topbar">
+    <div>
+      <h1>Marketing Analytics Dashboard</h1>
+      <p>Jan 2025 – Jun 2025 &nbsp;·&nbsp; Lucas Silva Freelance Web Design</p>
+    </div>
+    <div class="tab-row">
+      <button class="tab active" onclick="setView(this,'overview')">Overview</button>
+      <button class="tab" onclick="setView(this,'channels')">Channels</button>
+      <button class="tab" onclick="setView(this,'funnel')">Funnel</button>
+    </div>
+  </div>
+
+  <div id="view-overview">
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Total Sessions</div><div class="metric-value">6,400</div><div class="metric-delta up">▲ +338% vs start</div></div>
+      <div class="metric"><div class="metric-label">Total Conversions</div><div class="metric-value">262</div><div class="metric-delta up">▲ +421% vs start</div></div>
+      <div class="metric"><div class="metric-label">Avg CVR</div><div class="metric-value">4.1%</div><div class="metric-delta up">▲ +1.8pp over period</div></div>
+      <div class="metric"><div class="metric-label">Organic Share</div><div class="metric-value">44%</div><div class="metric-delta up">▲ +12pp vs Jan</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-sq" style="background:#3266ad"></span>Sessions</span>
+          <span class="legend-item"><span class="legend-sq" style="background:#73726c"></span>Conversions</span>
+        </div>
+        <div class="chart-label">Monthly sessions & conversions</div>
+        <div style="position:relative;width:100%;height:200px"><canvas id="trafficChart" role="img" aria-label="Line chart showing monthly sessions and conversions Jan–Jun 2025">Sessions grew from 420 to 1840. Conversions grew from 14 to 73.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-sq" style="background:#3266ad"></span>Organic</span>
+          <span class="legend-item"><span class="legend-sq" style="background:#1d9e75"></span>Direct</span>
+          <span class="legend-item"><span class="legend-sq" style="background:#e8a030"></span>Social</span>
+          <span class="legend-item"><span class="legend-sq" style="background:#d85a30"></span>Referral</span>
+        </div>
+        <div class="chart-label">Traffic by channel</div>
+        <div style="position:relative;width:100%;height:200px"><canvas id="channelPie" role="img" aria-label="Donut chart of traffic by channel">Organic 44%, Direct 23%, Social 19%, Referral 14%.</canvas></div>
+      </div>
+    </div>
+    <div class="insight-row">
+      <div class="insight-card"><span class="insight-tag tag-success">Opportunity</span><p>Organic search drove 44% of all traffic — doubling content output could push this past 60% by Q4.</p></div>
+      <div class="insight-card"><span class="insight-tag tag-info">Trend</span><p>Avg session duration increased from 1:12 to 2:47 over 6 months, signaling improved content relevance.</p></div>
+      <div class="insight-card"><span class="insight-tag tag-warn">Watch</span><p>Social CTR dropped 18% in May. Posting frequency decreased — consistent scheduling is the likely fix.</p></div>
+    </div>
+  </div>
+
+  <div id="view-channels" style="display:none">
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Best Channel</div><div class="metric-value">Organic</div><div class="metric-delta up">▲ 44% of sessions</div></div>
+      <div class="metric"><div class="metric-label">Highest CVR</div><div class="metric-value">Referral</div><div class="metric-delta up">▲ 5.8% conversion</div></div>
+      <div class="metric"><div class="metric-label">Social CTR</div><div class="metric-value">1.9%</div><div class="metric-delta down">▼ −18% in May</div></div>
+      <div class="metric"><div class="metric-label">Referral Links</div><div class="metric-value">14</div><div class="metric-delta up">▲ +9 vs Jan</div></div>
+    </div>
+    <div class="full-card">
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-sq" style="background:#3266ad"></span>Organic</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#1d9e75"></span>Direct</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#e8a030"></span>Social</span>
+        <span class="legend-item"><span class="legend-sq" style="background:#d85a30"></span>Referral</span>
+      </div>
+      <div class="chart-label">Channel performance — sessions by month</div>
+      <div style="position:relative;width:100%;height:240px"><canvas id="channelBar" role="img" aria-label="Grouped bar chart of sessions by channel over 6 months">Organic traffic grew steadily each month.</canvas></div>
+    </div>
+    <div class="full-card">
+      <div class="chart-label">Conversion rate by channel (%)</div>
+      <div style="position:relative;width:100%;height:200px"><canvas id="cvrBar" role="img" aria-label="Horizontal bar chart of conversion rate by channel">Referral 5.8%, Organic 4.2%, Direct 3.1%, Social 1.9%.</canvas></div>
+    </div>
+  </div>
+
+  <div id="view-funnel" style="display:none">
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Avg Bounce Rate</div><div class="metric-value">56%</div><div class="metric-delta up">▲ −15pp improvement</div></div>
+      <div class="metric"><div class="metric-label">Avg Session</div><div class="metric-value">2:14</div><div class="metric-delta up">▲ +62s vs Jan</div></div>
+      <div class="metric"><div class="metric-label">Pages/Session</div><div class="metric-value">2.8</div><div class="metric-delta up">▲ +0.9 vs Jan</div></div>
+      <div class="metric"><div class="metric-label">Lead Conv. Rate</div><div class="metric-value">4.1%</div><div class="metric-delta up">▲ +1.8pp over period</div></div>
+    </div>
+    <div class="full-card">
+      <div class="chart-label">Conversion funnel — avg across Jan–Jun 2025</div>
+      <div class="funnel-wrap">
+        <div class="funnel-row"><div class="funnel-label">Site visits</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%;background:#3266ad">6,400</div></div><div class="funnel-pct">100%</div></div>
+        <div class="funnel-row"><div class="funnel-label">Engaged</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:44%;background:#185fa5">2,816</div></div><div class="funnel-pct">44%</div></div>
+        <div class="funnel-row"><div class="funnel-label">Lead page</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:15%;background:#1d9e75">960</div></div><div class="funnel-pct">15%</div></div>
+        <div class="funnel-row"><div class="funnel-label">Form start</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:6.1%;background:#0f6e56">390</div></div><div class="funnel-pct">6.1%</div></div>
+        <div class="funnel-row"><div class="funnel-label">Converted</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:4.1%;background:#085041">262</div></div><div class="funnel-pct">4.1%</div></div>
+      </div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-label">Bounce rate by month (%)</div>
+        <div style="position:relative;width:100%;height:200px"><canvas id="bounceChart" role="img" aria-label="Line chart of bounce rate by month">Bounce rate decreased from 71% to 44%.</canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label">Avg session duration (minutes)</div>
+        <div style="position:relative;width:100%;height:200px"><canvas id="durationChart" role="img" aria-label="Line chart of session duration by month">Duration grew from 1.2 to 2.8 minutes.</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Lucas Silva</span> · Portfolio Project 2025 · lucashalesilva@gmail.com</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const months = ['Jan','Feb','Mar','Apr','May','Jun'];
+const baseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+  scales: {
+    x: { ticks: { color: '#6e6a63', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+    y: { ticks: { color: '#6e6a63', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } }
+  }
+};
+let chartsReady = false;
+function initCharts() {
+  if (chartsReady) return;
+  chartsReady = true;
+  new Chart(document.getElementById('trafficChart'), {
+    data: { labels: months, datasets: [
+      { type:'line', label:'Sessions', data:[420,610,870,1140,1520,1840], borderColor:'#3266ad', backgroundColor:'rgba(50,102,173,0.08)', tension:0.4, fill:true, yAxisID:'y', pointRadius:3 },
+      { type:'line', label:'Conversions', data:[14,22,38,51,64,73], borderColor:'#73726c', borderDash:[5,4], tension:0.4, fill:false, yAxisID:'y2', pointRadius:3 }
+    ]},
+    options: { ...baseOpts, scales: { x: baseOpts.scales.x, y: { ...baseOpts.scales.y, position:'left' }, y2: { ...baseOpts.scales.y, position:'right', grid:{ display:false } } } }
+  });
+  new Chart(document.getElementById('channelPie'), {
+    type: 'doughnut',
+    data: { labels:['Organic','Direct','Social','Referral'], datasets:[{ data:[44,23,19,14], backgroundColor:['#3266ad','#1d9e75','#e8a030','#d85a30'], borderWidth:3, borderColor:'#fff' }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, cutout:'60%' }
+  });
+  new Chart(document.getElementById('channelBar'), {
+    type:'bar', data:{ labels:months, datasets:[
+      { label:'Organic', data:[185,280,400,520,680,810], backgroundColor:'#3266ad' },
+      { label:'Direct', data:[97,140,200,262,350,423], backgroundColor:'#1d9e75' },
+      { label:'Social', data:[80,122,170,205,240,350], backgroundColor:'#e8a030' },
+      { label:'Referral', data:[58,68,100,153,250,257], backgroundColor:'#d85a30' },
+    ]}, options: baseOpts
+  });
+  new Chart(document.getElementById('cvrBar'), {
+    type:'bar', data:{ labels:['Referral','Organic','Direct','Social'], datasets:[{ label:'CVR %', data:[5.8,4.2,3.1,1.9], backgroundColor:['#3266ad','#1d9e75','#e8a030','#d85a30'] }] },
+    options: { ...baseOpts, indexAxis:'y', scales:{ x:{ ...baseOpts.scales.x, max:8, ticks:{ ...baseOpts.scales.x.ticks, callback: v => v+'%' } }, y:baseOpts.scales.y } }
+  });
+  new Chart(document.getElementById('bounceChart'), {
+    type:'line', data:{ labels:months, datasets:[{ label:'Bounce %', data:[71,65,60,55,49,44], borderColor:'#d85a30', backgroundColor:'rgba(216,90,48,0.07)', tension:0.4, fill:true, pointRadius:3 }] },
+    options:{ ...baseOpts, scales:{ x:baseOpts.scales.x, y:{ ...baseOpts.scales.y, ticks:{ ...baseOpts.scales.y.ticks, callback: v => v+'%' } } } }
+  });
+  new Chart(document.getElementById('durationChart'), {
+    type:'line', data:{ labels:months, datasets:[{ label:'Duration (min)', data:[1.2,1.5,1.9,2.2,2.5,2.8], borderColor:'#1d9e75', backgroundColor:'rgba(29,158,117,0.07)', tension:0.4, fill:true, pointRadius:3 }] },
+    options:{ ...baseOpts, scales:{ x:baseOpts.scales.x, y:{ ...baseOpts.scales.y, ticks:{ ...baseOpts.scales.y.ticks, callback: v => v.toFixed(1)+'m' } } } }
+  });
+}
+function setView(btn, view) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['overview','channels','funnel'].forEach(v => document.getElementById('view-'+v).style.display = v===view ? '' : 'none');
+  initCharts();
+}
+initCharts();
+</script>
+</body>
+</html>
